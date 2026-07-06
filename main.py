@@ -55,11 +55,77 @@ class Box:
 		self.rightBound = (math.floor(x / boxSize) + 1) * boxSize
 		self.lowerBound = math.floor(y / boxSize) * boxSize
 		self.upperBound = (math.floor(y / boxSize) + 1) * boxSize
+		self.position = (math.floor(x / boxSize)), (math.floor(y / boxSize))
+
+		match(gridSize):
+			case 4:
+				match(self.position):
+					case (0, 0): self.number = 1
+					case (0, 1): self.number = 2
+					case (1, 0): self.number = 3
+					case (1, 1): self.number = 4
+			case 9:
+				match(self.position):
+					case (0, 0): self.number = 1
+					case (0, 1): self.number = 2
+					case (0, 2): self.number = 3
+					case (1, 0): self.number = 4
+					case (1, 1): self.number = 5
+					case (1, 2): self.number = 6
+					case (2, 0): self.number = 7
+					case (2, 1): self.number = 8
+					case (2, 2): self.number = 9
+			case 16:
+				match(self.position):
+					case (0, 0): self.number = 1
+					case (0, 1): self.number = 2
+					case (0, 2): self.number = 3
+					case (0, 3): self.number = 4
+					case (1, 0): self.number = 5
+					case (1, 1): self.number = 6
+					case (1, 2): self.number = 7
+					case (1, 3): self.number = 8
+					case (2, 0): self.number = 9
+					case (2, 1): self.number = 10
+					case (2, 2): self.number = 11
+					case (2, 3): self.number = 12
+					case (3, 0): self.number = 13
+					case (3, 1): self.number = 14
+					case (3, 2): self.number = 15
+					case (3, 3): self.number = 16
+			case 25:
+				match(self.position):
+					case (0, 0): self.number = 1
+					case (0, 1): self.number = 2
+					case (0, 2): self.number = 3
+					case (0, 3): self.number = 4
+					case (0, 4): self.number = 5
+					case (1, 0): self.number = 6
+					case (1, 1): self.number = 7
+					case (1, 2): self.number = 8
+					case (1, 3): self.number = 9
+					case (1, 4): self.number = 10
+					case (2, 0): self.number = 11
+					case (2, 1): self.number = 12
+					case (2, 2): self.number = 13
+					case (2, 3): self.number = 14
+					case (2, 4): self.number = 15
+					case (3, 0): self.number = 16
+					case (3, 1): self.number = 17
+					case (3, 2): self.number = 18
+					case (3, 3): self.number = 19
+					case (3, 4): self.number = 20
+					case (4, 0): self.number = 21
+					case (4, 1): self.number = 22
+					case (4, 2): self.number = 23
+					case (4, 3): self.number = 24
+					case (4, 4): self.number = 25
 
 	def __str__(self):
-		return f"""Box Position: ({math.floor(x / boxSize)}, {math.floor(y / boxSize)})
-Horizontal Bounds: ({box.leftBound}, {box.rightBound}]
-Vertical Bounds: ({box.lowerBound}, {box.upperBound}]"""
+		return f"""Box Number: {self.number}
+Box Position: {self.position}
+Horizontal Bounds: ({self.leftBound}, {self.rightBound}]
+Vertical Bounds: ({self.lowerBound}, {self.upperBound}]"""
 
 #SETUP FUNCTIONS
 def borderGrid(num):
@@ -203,28 +269,22 @@ def clearMarks(x, y, box, i):
 		if i in marksGrid[j][y]:
 			marksGrid[j][y].remove(i)
 
-	breakLoop = False
 	for y2 in range(box.lowerBound, box.upperBound):
 		for x2 in range(box.leftBound, box.rightBound):
 			if i in marksGrid[x2][y2]:
 				marksGrid[x2][y2].remove(i)
-				breakLoop = True
-				break
-		if breakLoop:
-			break
 
 	marksGrid[x][y].clear()
 
 def checkPlacement(x, y, i, loopCt):
 	if grid[x][y] != solutionGrid[x][y]:
 		grid[x][y] = "X"
+		printMarksGrid()
 		printGrid(False)
-		sortedMarksGrid = list(marksGrid[x][y])
-		sortedPrevMarksGrid = list(prevMarksGrid[x][y])
-		sortedMarksGrid.sort()
-		sortedPrevMarksGrid.sort()
+		sortedMarks = list(marksGrid[x][y])
+		sortedMarks.sort()
 		print(f"Error: tried to place incorrect {i} at ({x}, {y}) on loop {loopCt}")
-		print(f"Before: {sortedPrevMarksGrid}\nAfter:  {sortedMarksGrid}")
+		print(f"Marks: {sortedMarks}")
 		quit()
 
 def placeNumbers(x, y):
@@ -321,18 +381,6 @@ def checkSubsets(x, y):
 					marksGrid[x2][y2] -= marksGrid[x][y]
 	del box
 
-#If pair only shows up twice in group, remove all other marks from both spaces
-def checkHiddenPair(x, y, box):
-	pairsInRow = set()
-	for i in marksGrid[x][y]:
-		for j in marksGrid[x][y]:
-			for y2 in range(gridSize):
-				if i in marksGrid[x][y2] and j in marksGrid[x][y2]:
-					pairsInRow.add((x, y2))
-	if len(pairsInRow) == 2:
-		pass
-		#Remove all other marks from these two spaces
-
 #Handle cases like {1, 2}, {2, 3}, {1, 3} and remove those marks from rest of group
 def checkBrokenSets(x, y):
 	box = Box(x, y)
@@ -349,7 +397,7 @@ def checkBrokenSets(x, y):
 	if len(subsetIndices) == len(superSet) and len(subsetIndices) > 1:
 		for x2 in range(gridSize):
 			if x2 not in subsetIndices and grid[x2][y] == "_":
-				marksGrid[x][y] -= superSet
+				marksGrid[x2][y] -= superSet
 
 	# If n spaces have a set n long, remove those numbers' marks from rest of the column
 	subsetIndices = {y}
@@ -383,6 +431,11 @@ def checkBrokenSets(x, y):
 	del box
 
 #If number can only be in one row/col in box, remove mark in row/col outside box
+# ┌───────┬───────┬───────┐		┌───────┬───────┬───────┐
+# │     X │       │   X   │	->	│     X │       │   X   │
+# │ X     │ X X X │ X X X │		│       │ X X X │       │
+# │   X   │       │ X   X │	->	│   X   │       │ X   X │
+# └───────┴───────┴───────┘		└───────┴───────┴───────┘
 def checkLockedCandidate1(x, y):
 	box = Box(x, y)
 	rowCandidates = set()
@@ -438,6 +491,11 @@ def checkLockedCandidate1(x, y):
 	del box
 
 #If number can only be in one box in row/col, remove mark in box outside row/col
+# ┌───────┬───────┬───────┐		┌───────┬───────┬───────┐
+# │ X     │ X     │       │	->	│ X     │       │       │
+# │       │ X X X │       │		│       │ X X X │       │
+# │       │     X │     X │	->	│       │       │     X │
+# └───────┴───────┴───────┘		└───────┴───────┴───────┘
 def checkLockedCandidate2(x, y):
 	box = Box(x, y)
 
@@ -464,6 +522,102 @@ def checkLockedCandidate2(x, y):
 				for y2 in range(box.leftBound, box.rightBound):
 					if y2 != y and i in marksGrid[x2][y2]:
 						marksGrid[x2][y2].remove(i)
+	del box
+
+#If row and col both have two of a number, remove number from intersection
+def twoStringKite(x, y):
+	box = Box(x, y)
+	for i in marksGrid[x][y]:
+		start1 = (x, y)
+		end1 = None
+		start2 = None
+		end2 = None
+		vertEnd = None
+		horizEnd = None
+		horizCt = 0
+		vertCt = 0
+		horizCt2 = 0
+		vertCt2 = 0
+		firstIsVertical = False
+		firstIsHorizontal = False
+		secondIsVertical = False
+		secondIsHorizontal = False
+		for j in range(gridSize):
+			if i in marksGrid[j][y]:
+				vertCt += 1
+				if j != x:
+					vertEnd = (j, y)
+			if i in marksGrid[x][j]:
+				horizCt += 1
+				if j != y:
+					horizEnd = (x, j)
+		if vertCt != 2 and horizCt != 2:
+			continue
+		if vertCt == 2:
+			firstIsVertical = True
+			end1 = vertEnd
+		if horizCt == 2:
+			firstIsHorizontal = True
+			end1 = horizEnd
+
+		for x2 in range(box.leftBound, box.rightBound):
+			if x2 == x:
+				continue
+			for y2 in range(box.lowerBound, box.upperBound):
+				if y2 == y:
+					continue
+				if i in marksGrid[x2][y2]:
+					start2 = (x2, y2)
+					for j in range(gridSize):
+						if i in marksGrid[j][y2] and firstIsHorizontal and not firstIsVertical:
+							vertCt2 += 1
+							if j != x2:
+								vertEnd = (j, y2)
+						if i in marksGrid[x2][j] and firstIsVertical and not firstIsHorizontal:
+							horizCt2 += 1
+							if j != y2:
+								horizEnd = (x2, j)
+					if vertCt2 == 2:
+						secondIsVertical = True
+						end2 = vertEnd
+						break
+					if horizCt2 == 2:
+						secondIsHorizontal = True
+						end2 = horizEnd
+						break
+			if secondIsVertical or secondIsHorizontal:
+				break
+		if start2 == None or end2 == None:
+			continue
+
+		isRow1 = False
+		isCol1 = False
+		isRow2 = False
+		isCol2 = False
+		if start1[0] == end1[0]: isCol1 = True
+		if start1[1] == end1[1]: isRow1 = True
+		if start2[0] == end2[0]: isCol2 = True
+		if start2[1] == end2[1]: isRow2 = True
+
+		if (isRow1 and isRow2) or (isCol1 and isCol2):
+			continue
+
+		targetX = end2[0]
+		targetY = end1[1]
+
+		# print(f"{i} in box {box.number} made it this far | Group 1: {start1} - {end1} | Group 2: {start2} - {end2} | Target: ({targetX}, {targetY})")
+		# if start1[0] != end1[0] and start1[1] != end1[1]:
+		# 	print(f"Error: {start1} and {end1} not a straight line")
+		# if start2[0] != end2[0] and start2[1] != end2[1]:
+		# 	print(f"Error: {start2} and {end2} not a straight line")
+		
+		if targetX == x and targetY == y:
+			raise Exception(f"{targetX} = {x} and/or {targetY} = {y} | i = {i}")
+		
+		#Find intersection of both ends
+		if grid[targetX][targetY] == "_" and i in marksGrid[targetX][targetY]:
+				marksGrid[targetX][targetY].remove(i)
+				#print(f"Removed {i} mark from ({targetX}, {targetY})")
 	del box
 
 validateGrid()
@@ -521,6 +675,7 @@ while not complete:
 				checkBrokenSets(x, y)
 				checkLockedCandidate1(x, y)
 				checkLockedCandidate2(x, y)
+				twoStringKite(x, y)
 
 				if marksGrid[x][y] == set():
 					print(f"Error: all marks removed from ({x}, {y}) on loop {loopCt}")
@@ -548,4 +703,4 @@ endTime = time.perf_counter()
 validateGrid()
 printGrid(False)
 print(f"Puzzle solved in {loopCt} loops")
-print(f"Compute time: {((endTime - startTime) * 1000):.2f} ms")
+print(f"Compute time: {((endTime - startTime) * 1000):.2f} ms ({((endTime - startTime)):.1f} sec)")
