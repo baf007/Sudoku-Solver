@@ -524,6 +524,53 @@ def checkLockedCandidate2(x, y):
 						marksGrid[x2][y2].remove(i)
 	del box
 
+#If a mark appears in exactly 4 corners across two rows/cols, clear mark from those corners' cols/rows aside from the corners themselves
+def xWing(x, y):
+	#Scan rows
+	for i in marksGrid[x][y]:
+		corners = []
+		for y2 in range(gridSize):
+			if y2 == y:
+				continue
+			for x2 in range(gridSize):
+				if (i not in marksGrid[x2][y] and i in marksGrid[x2][y2]) or (i in marksGrid[x2][y] and i not in marksGrid[x2][y2]):
+					corners.clear()
+					break
+				if i in marksGrid[x2][y] and i in marksGrid[x2][y2]:
+					corners.append((x2, y))
+					corners.append((x2, y2))
+			if len(corners) == 4:
+				break
+			corners.clear()
+		if len(corners) == 4:
+			for y2 in range(gridSize):
+				if y2 == corners[0][1] or y2 == corners[1][1]:
+					continue
+				marksGrid[corners[0][0]][y2].discard(i)
+				marksGrid[corners[2][0]][y2].discard(i)
+
+		#Scan columns	
+		corners = []
+		for x2 in range(gridSize):
+			if x2 == x:
+				continue
+			for y2 in range(gridSize):
+				if (i not in marksGrid[x][y2] and i in marksGrid[x2][y2]) or (i in marksGrid[x][y2] and i not in marksGrid[x2][y2]):
+					corners.clear()
+					break
+				if i in marksGrid[x][y2] and i in marksGrid[x2][y2]:
+					corners.append((x, y2))
+					corners.append((x2, y2))
+			if len(corners) == 4:
+				break
+			corners.clear()
+		if len(corners) == 4:
+			for x2 in range(gridSize):
+				if x2 == corners[0][0] or x2 == corners[1][0]:
+					continue
+				marksGrid[x2][corners[0][1]].discard(i)
+				marksGrid[x2][corners[2][1]].discard(i)
+
 #If row and col both have two of a number, remove number from intersection
 def twoStringKite(x, y):
 	box = Box(x, y)
@@ -605,19 +652,12 @@ def twoStringKite(x, y):
 		targetX = end2[0]
 		targetY = end1[1]
 
-		# print(f"{i} in box {box.number} made it this far | Group 1: {start1} - {end1} | Group 2: {start2} - {end2} | Target: ({targetX}, {targetY})")
-		# if start1[0] != end1[0] and start1[1] != end1[1]:
-		# 	print(f"Error: {start1} and {end1} not a straight line")
-		# if start2[0] != end2[0] and start2[1] != end2[1]:
-		# 	print(f"Error: {start2} and {end2} not a straight line")
-		
 		if targetX == x and targetY == y:
 			raise Exception(f"{targetX} = {x} and/or {targetY} = {y} | i = {i}")
 		
 		#Find intersection of both ends
 		if grid[targetX][targetY] == "_" and i in marksGrid[targetX][targetY]:
 				marksGrid[targetX][targetY].remove(i)
-				#print(f"Removed {i} mark from ({targetX}, {targetY})")
 	del box
 
 validateGrid()
@@ -675,6 +715,7 @@ while not complete:
 				checkBrokenSets(x, y)
 				checkLockedCandidate1(x, y)
 				checkLockedCandidate2(x, y)
+				xWing(x, y)
 				twoStringKite(x, y)
 
 				if marksGrid[x][y] == set():
