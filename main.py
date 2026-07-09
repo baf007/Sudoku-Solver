@@ -571,6 +571,147 @@ def xWing(x, y):
 				marksGrid[x2][corners[0][1]].discard(i)
 				marksGrid[x2][corners[2][1]].discard(i)
 
+#Check two pincers from a pivot and clear that number's mark from spaces that see both of them
+prevPivots = []
+def yWing(x, y):
+	if (x, y) in prevPivots:
+		return
+	box = Box(x, y)
+	pivot = (x, y)
+	pincer1 = None
+	pincer1Type = None
+	pincer2 = None
+	pincer2Type = None
+	marks = marksGrid[x][y].copy()
+	rowMarks = marksGrid[x][y].copy()
+	colMarks = marksGrid[x][y].copy()
+	boxMarks = marksGrid[x][y].copy()
+	finalMarks = []
+	pincerCandidatesRow = []
+	pincerCandidatesCol = []
+	pincerCandidatesBox = []
+
+	#Scan for pincer in row
+	for y2 in range(gridSize):
+		if len(marksGrid[x][y2]) == 2 and not marksGrid[x][y].isdisjoint(marksGrid[x][y2]) and y2 != y:
+			if marksGrid[x][y2] == marksGrid[x][y]:
+				return
+			pincerCandidatesRow.append((x, y2))
+			rowMarks.update(marksGrid[x][y2])
+			marks.update(marksGrid[x][y2])
+	
+	#Scan for pincer in col
+	for x2 in range(gridSize):
+		if len(marksGrid[x2][y]) == 2 and not marksGrid[x][y].isdisjoint(marksGrid[x2][y]) and x2 != x:
+			if marksGrid[x2][y] == marksGrid[x][y]:
+				return
+			pincerCandidatesCol.append((x2, y))
+			colMarks.update(marksGrid[x2][y])
+			marks.update(marksGrid[x2][y])
+	
+	#Scan for pincer in box
+	for y2 in range(box.lowerBound, box.upperBound):
+		for x2 in range(box.leftBound, box.rightBound):
+			if len(marksGrid[x2][y2]) == 2 and not marksGrid[x][y].isdisjoint(marksGrid[x2][y2]) and (x2 != x or y2 != y):
+				if marksGrid[x2][y2] == marksGrid[x][y]:
+					return
+				pincerCandidatesBox.append((x2, y2))
+				boxMarks.update(marksGrid[x2][y2])
+				marks.update(marksGrid[x2][y2])
+	
+	if len(marks) < 3:
+		return
+
+	#check if any three spaces are {x, y}, {y, z}, {x, z}
+	if len(pincerCandidatesBox) > 0:
+		for boxCan in pincerCandidatesBox:
+			if len(pincerCandidatesRow) > 0:
+				for rowCan in pincerCandidatesRow:
+					rowCanBox = Box(rowCan[0], rowCan[1])
+					if rowCanBox.position == box.position:
+						continue
+					currMarks = marksGrid[x][y].copy()
+					currMarks.update(marksGrid[boxCan[0]][boxCan[1]])
+					currMarks.update(marksGrid[rowCan[0]][rowCan[1]])
+					if len(currMarks) != 3:
+						continue
+					finalMarks = currMarks.copy()
+					pincer1 = rowCan
+					pincer1Type = "row"
+					pincer2 = boxCan
+					pincer2Type = "box"
+					del rowCanBox
+			if len(pincerCandidatesCol) > 0:
+				for colCan in pincerCandidatesCol:
+					colCanBox = Box(colCan[0], colCan[1])
+					if colCanBox.position == box.position:
+						continue
+					currMarks = marksGrid[x][y].copy()
+					currMarks.update(marksGrid[boxCan[0]][boxCan[1]])
+					currMarks.update(marksGrid[colCan[0]][colCan[1]])
+					if len(currMarks) != 3:
+						continue
+					finalMarks = currMarks.copy()
+					pincer1 = colCan
+					pincer1Type = "col"
+					pincer2 = boxCan
+					pincer2Type = "box"
+					del colCanBox
+	if len(pincerCandidatesRow) > 0:
+		for rowCan in pincerCandidatesRow:
+			rowCanBox = Box(rowCan[0], rowCan[1])
+			if rowCanBox.position == box.position:
+				continue
+			if len(pincerCandidatesCol) > 0:
+				for colCan in pincerCandidatesCol:
+					colCanBox = Box(colCan[0], colCan[1])
+					if colCanBox.position == box.position:
+						continue
+					currMarks = marksGrid[x][y].copy()
+					currMarks.update(marksGrid[rowCan[0]][rowCan[1]])
+					currMarks.update(marksGrid[colCan[0]][colCan[1]])
+					if len(currMarks) != 3:
+						continue
+					finalMarks = currMarks.copy()
+					pincer1 = rowCan
+					pincer1Type = "row"
+					pincer2 = colCan
+					pincer2Type = "col"
+					del colCanBox
+			del rowCanBox
+	del box
+
+	if (not pincer1 or not pincer2
+		or pincer1[0] == pincer2[0] or pincer1[1] == pincer2[1]
+		or marksGrid[pincer1[0]][pincer1[1]] == marksGrid[pincer2[0]][pincer2[1]]
+		or marksGrid[pivot[0]][pivot[1]] == marksGrid[pincer1[0]][pincer1[1]]
+		or marksGrid[pivot[0]][pivot[1]] == marksGrid[pincer2[0]][pincer2[1]]):
+		return
+	
+	if pincer1Type == "row" and pincer2Type == "col":
+		if grid[pincer2[0]][pincer1[1]] == "_":
+			for i in finalMarks:
+				if i not in marksGrid[x][y]:
+					marksGrid[pincer2[0]][pincer1[1]].discard(i)
+	elif pincer1Type == "row" and pincer2Type == "box":
+		targetBox = Box(pincer1[0], pincer1[1])
+		for y2 in range(targetBox.lowerBound, targetBox.upperBound):
+			if grid[pincer2[0]][y2] == "_":
+				for i in finalMarks:
+					if i not in marksGrid[x][y]:
+						marksGrid[pincer2[0]][y2].discard(i)
+		del targetBox
+	elif pincer1Type == "col" and pincer2Type == "box":
+		targetBox = Box(pincer1[0], pincer1[1])
+		for x2 in range(targetBox.leftBound, targetBox.rightBound):
+			if grid[x2][pincer2[1]] == "_":
+				for i in finalMarks:
+					if i not in marksGrid[x][y]:
+						marksGrid[x2][pincer2[1]].discard(i)
+		del targetBox
+
+	prevPivots.append(pivot)
+
 #If row and col both have two of a number, remove number from intersection
 def twoStringKite(x, y):
 	box = Box(x, y)
@@ -716,6 +857,8 @@ while not complete:
 				checkLockedCandidate1(x, y)
 				checkLockedCandidate2(x, y)
 				xWing(x, y)
+				if len(marksGrid[x][y]) == 2:
+					yWing(x, y)
 				twoStringKite(x, y)
 
 				if marksGrid[x][y] == set():
@@ -728,7 +871,7 @@ while not complete:
 	printMarksGrid()
 	print()
 
-	if prevGrid == grid:
+	if prevGrid == grid and prevMarksGrid == marksGrid:
 		print(f"\nPuzzle not solved ({loopCt} loops)")
 		quit()
 
