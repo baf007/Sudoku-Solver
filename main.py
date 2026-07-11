@@ -6,7 +6,8 @@ import copy
 #filename = "10 Apr 2026 4x4.txt"  #https://sudokubliss.com/5B10-4-2026-sudoku
 #filename = "2 Nov 2025 Easy.txt" #https://sudokubliss.com/5E2-11-2025-sudoku
 #filename = "2 Nov 2025 Hard.txt" #https://sudokubliss.com/5H2-11-2025-sudoku
-filename = "2 Nov 2025 Expert.txt" #https://sudokubliss.com/5V2-11-2025-sudoku
+#filename = "2 Nov 2025 Expert.txt" #https://sudokubliss.com/5V2-11-2025-sudoku
+filename = "12 Jul 2026 Evil.txt" #https://sudokubliss.com/5U12-7-2026-sudoku
 #filename = "10 Nov 2025 16x16.txt" #https://sudokubliss.com/5Y10-11-2025-sudoku
 
 #Create grid + solution grid
