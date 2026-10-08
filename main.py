@@ -615,8 +615,8 @@ def yWing(x, y):
 			marks.update(marksGrid[y2][x])
 	
 	#Scan for pincer in box
-	for x2 in range(box.lowerBound, box.upperBound):
-		for y2 in range(box.leftBound, box.rightBound):
+	for y2 in range(box.lowerBound, box.upperBound):
+		for x2 in range(box.leftBound, box.rightBound):
 			if len(marksGrid[y2][x2]) == 2 and not marksGrid[y][x].isdisjoint(marksGrid[y2][x2]) and (x2 != x or y2 != y):
 				if marksGrid[y2][x2] == marksGrid[y][x]:
 					return
@@ -752,9 +752,9 @@ def skyscraper(x, y):
 						row = x2
 						break
 			#print(f"Row {row}: {rowCandidates2}")
-			for y2 in range(gridSize):
-				if i in marksGrid[y2][row]:
-					print(f"{x, y}, {row, y}, {row, y2}, {x, y2}")
+			# for y2 in range(gridSize):
+			# 	if i in marksGrid[y2][row]:
+			# 		print(f"{x, y}, {row, y}, {row, y2}, {x, y2}")
 
 
 		# if rowCandidates == 2:
@@ -845,7 +845,7 @@ def skyscraper(x, y):
 		if straightSides != 3:
 			continue
 		
-		print(f"Skyscraper for {i} at {corner1}, {corner2}, {corner3}, {corner4}")
+		#print(f"Skyscraper for {i} at {corner1}, {corner2}, {corner3}, {corner4}")
 
 		if rowCandidates == 2:
 			pass
