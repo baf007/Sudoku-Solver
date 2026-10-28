@@ -348,6 +348,34 @@ def placeNumbers(x, y):
 				clearMarks(x, y, box, i)
 	del box
 
+#HELPER FUNCTIONS
+def removeMarkSeenByTwoSpaces(space1, space2, markToRemove):
+	#Row and column
+	marksGrid[space1[1]][space2[0]].discard(markToRemove)
+
+	#Row and box
+	targetBox = Box(space1[0], space1[1])
+	if targetBox.lowerBound <= space2[1] < targetBox.upperBound:
+		for x2 in range(targetBox.leftBound, targetBox.rightBound):
+			marksGrid[space2[1]][x2].discard(markToRemove)
+			#print(f"{space1} {space2} | row/box | Removed {markToRemove} from {x2, space2[1]}")
+		del targetBox
+
+	#Column and box
+	targetBox = Box(space1[0], space1[1])
+	if targetBox.leftBound <= space2[0] < targetBox.rightBound:
+		for y2 in range(targetBox.lowerBound, targetBox.upperBound):
+			marksGrid[y2][space2[0]].discard(markToRemove)
+			#print(f"{space1} {space2} | col/box | Removed {markToRemove} from {space2[0], y2}")
+	del targetBox
+
+def checkIfTwoSpacesSeeEachOther(space1, space2):
+	if (space1[0] == space2[0] or space1[1] == space2[1] or
+	Box(space1[0], space1[1]).number == Box(space2[0], space2[1]).number):
+		return True
+	else:
+		return False
+
 #ELIMINATION FUNCTIONS
 #If multiple spaces' marks are a subset of the current space's, remove those marks from all other spaces in group
 def checkSubsets(x, y):
@@ -717,6 +745,118 @@ def yWing(x, y):
 
 	prevPivots.append(pivot)
 
+#If two spaces with the same mark pair can be connected through three lines (the middle of which only has two of one of the numbers) then remove the other number from spaces that see the first and last point
+prevWs = []
+def wWing(x, y):
+	def checkRow(x, y, box, i):
+		rowPointsList = [(x, y), None, None, None]
+		for x2 in range(gridSize):
+			if i in marksGrid[y][x2] and x != x2:
+				iCount = 0
+				y2Index = None
+				for y2 in range(gridSize):
+					if i in marksGrid[y2][x2]:
+						iCount += 1
+						if y2 != y:
+							y2Index = y2
+				if iCount != 2:
+					continue
+				rowPointsList[1] = (x2, y)
+				rowPointsList[2] = (x2, y2Index)
+
+				for x3 in range(gridSize):
+					if marksGrid[y2Index][x3] == marksGrid[y][x] and box.number != Box(x3, y2Index).number and x2 != x3:
+						rowPointsList[3] = (x3, y2Index)
+		return rowPointsList
+
+	def checkCol(x, y, box, i):
+		colPointsList = [(x, y), None, None, None]
+		for y2 in range(gridSize):
+			if i in marksGrid[y2][x] and y != y2:
+				iCount = 0
+				x2Index = None
+				for x2 in range(gridSize):
+					if i in marksGrid[y2][x2]:
+						iCount += 1
+						if x2 != x:
+							x2Index = x2
+				if iCount != 2:
+					continue
+				colPointsList[1] = (x, y2)
+				colPointsList[2] = (x2Index, y2)
+
+				for y3 in range(gridSize):
+					if marksGrid[y3][x2Index] == marksGrid[y][x] and box.number != Box(x2Index, y3).number and y2 != y3:
+						colPointsList[3] = (x2Index, y3)
+		return colPointsList
+
+	box = Box(x, y)
+	marks = []
+	for i in marksGrid[y][x]:
+		marks.append(i)
+
+	#Check row for another i
+	rowPointsList1 = checkRow(x, y, box, marks[0])
+	rowPointsList2 = checkRow(x, y, box, marks[1])
+
+	#Check col for another i
+	colPointsList1 = checkCol(x, y, box, marks[0])
+	colPointsList2 = checkCol(x, y, box, marks[1])
+
+	del box
+
+	rowCheck1 = True
+	rowCheck2 = True
+	colCheck1 = True
+	colCheck2 = True
+
+	for i in rowPointsList1:
+		if not i:
+			rowCheck1 = False
+	for i in rowPointsList2:
+		if not i:
+			rowCheck2 = False
+	for i in colPointsList1:
+		if not i:
+			colCheck1 = False
+	for i in colPointsList2:
+		if not i:
+			colCheck2 = False
+
+	if (marks[0], rowPointsList1[0], rowPointsList1[3]) in prevWs: rowCheck1 = False
+	if (marks[1], rowPointsList2[0], rowPointsList2[3]) in prevWs: rowCheck2 = False
+	if (marks[0], colPointsList1[0], colPointsList1[3]) in prevWs: colCheck1 = False
+	if (marks[1], colPointsList2[0], colPointsList2[3]) in prevWs: colCheck2 = False
+
+	if rowCheck1 and checkIfTwoSpacesSeeEachOther(rowPointsList1[0], rowPointsList1[3]):
+		rowCheck1 = False
+		prevWs.append((marks[0], rowPointsList1[0], rowPointsList1[3]))
+	if rowCheck2 and checkIfTwoSpacesSeeEachOther(rowPointsList2[0], rowPointsList2[3]):
+		rowCheck2 = False
+		prevWs.append((marks[1], rowPointsList2[0], rowPointsList2[3]))
+	if colCheck1 and checkIfTwoSpacesSeeEachOther(colPointsList1[0], colPointsList1[3]):
+		colCheck1 = False
+		prevWs.append((marks[0], colPointsList1[0], colPointsList1[3]))
+	if colCheck2 and checkIfTwoSpacesSeeEachOther(colPointsList2[0], colPointsList2[3]):
+		colCheck2 = False
+		prevWs.append((marks[1], colPointsList2[0], colPointsList2[3]))
+
+	if not rowCheck1 and not rowCheck2 and not colCheck1 and not colCheck2:
+		return
+
+	if rowCheck1:
+		removeMarkSeenByTwoSpaces(rowPointsList1[0], rowPointsList1[3], marks[1])
+		prevWs.append((marks[0], rowPointsList1[0], rowPointsList1[3]))
+	if rowCheck2:
+		removeMarkSeenByTwoSpaces(rowPointsList2[0], rowPointsList2[3], marks[0])
+		prevWs.append((marks[1], rowPointsList2[0], rowPointsList2[3]))
+	if colCheck1:
+		removeMarkSeenByTwoSpaces(colPointsList1[0], colPointsList1[3], marks[1])
+		prevWs.append((marks[0], colPointsList1[0], colPointsList1[3]))
+	if colCheck2:
+		removeMarkSeenByTwoSpaces(colPointsList2[0], colPointsList2[3], marks[0])
+		prevWs.append((marks[1], colPointsList2[0], colPointsList2[3]))
+
 def skyscraper(x, y):
 	for i in marksGrid[y][x]:
 		#colIndex = None
@@ -997,6 +1137,7 @@ while not complete:
 				xWing(x, y)
 				if len(marksGrid[y][x]) == 2:
 					yWing(x, y)
+					wWing(x, y)
 				skyscraper(x, y)
 				twoStringKite(x, y)
 
