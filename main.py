@@ -10,6 +10,9 @@ import copy
 #filename = "12 Jul 2026 Evil.txt" #https://sudokubliss.com/5U12-7-2026-sudoku
 filename = "9 Oct 2026 Evil.txt" #https://sudokubliss.com/U09-10-2026-sudoku
 #filename = "10 Nov 2025 16x16.txt" #https://sudokubliss.com/5Y10-11-2025-sudoku
+#filename = "Skyscraper Practice.txt" #https://sudokubliss.com/practice/skyscraper
+
+isPractice = True if "Practice" in filename else False
 
 #Create grid + solution grid
 with open(filename) as file:
@@ -17,6 +20,20 @@ with open(filename) as file:
 	if math.sqrt(gridSize) != math.floor(math.sqrt(gridSize)):
 		print("Error: grid size must be perfect square")
 		quit()
+	
+	match(gridSize):
+		case 4:
+			charSet = {"1", "2", "3", "4"}
+		case 9:
+			charSet = {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
+		case 16:
+			charSet = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G"}
+		case 25:
+			charSet = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"}
+		case _:
+			print("Error: undefined charset")
+			quit()
+	
 	grid = [[] * gridSize for i in range(gridSize)]
 	for y in range(gridSize):
 		currLine = file.readline()
@@ -25,26 +42,25 @@ with open(filename) as file:
 			quit()
 		for x in range(len(currLine) - 1):
 			grid[y].append(currLine[x])
-	solutionGrid = [[] * gridSize for i in range(gridSize)]
-	for y in range(gridSize):
-		currLine = file.readline()
-		for x in range(len(currLine) - 1):
-			solutionGrid[y].append(currLine[x])
-marksGrid = [[set()] * gridSize for i in range(gridSize)]
-boxSize = int(math.sqrt(gridSize))
-match(gridSize):
-	case 4:
-		charSet = {"1", "2", "3", "4"}
-	case 9:
-		charSet = {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
-	case 16:
-		charSet = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G"}
-	case 25:
-		charSet = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"}
-	case _:
-		print("Error: undefined charset")
-		quit()
+	
+	marksGrid = [[set() for j in range(gridSize)] for i in range(gridSize)]
+	if isPractice:
+		for y in range(gridSize):
+			currLine = file.readline()
+			x = 0
+			for j in range(len(currLine) - 1):
+				if currLine[j] in charSet:
+					marksGrid[y][x].add(currLine[j])
+				elif currLine[j] == ',':
+					x += 1
+	else:
+		solutionGrid = [[] * gridSize for i in range(gridSize)]
+		for y in range(gridSize):
+			currLine = file.readline()
+			for x in range(len(currLine) - 1):
+				solutionGrid[y].append(currLine[x])
 
+boxSize = int(math.sqrt(gridSize))
 charSetList = list(charSet)
 charSetList.sort()
 markSpaces = {}
@@ -857,7 +873,8 @@ def wWing(x, y):
 		removeMarkSeenByTwoSpaces(colPointsList2[0], colPointsList2[3], marks[0])
 		prevWs.append((marks[1], colPointsList2[0], colPointsList2[3]))
 
-def skyscraper(x, y):
+#If a mark appears in exactly 4 corners across two rows/cols, but one side is slanted, clear mark from spaces that see both slant corners
+def skyscraperOLD(x, y):
 	for i in marksGrid[y][x]:
 		#colIndex = None
 		rowCandidates = 0 # H pattern
@@ -880,17 +897,17 @@ def skyscraper(x, y):
 			continue
 		
 		#Go along middle path of H or I
-		if rowCandidates == 2:
-			row = None
-			for x2 in range(gridSize):
-				if i in marksGrid[y][x2]:
-					rowCandidates2 = 0
-					for y2 in range(gridSize):
-						if i in marksGrid[y2][x2]:
-							rowCandidates2 += 1
-					if rowCandidates2 == 2:
-						row = x2
-						break
+		# if rowCandidates == 2:
+		# 	row = None
+		# 	for x2 in range(gridSize):
+		# 		if i in marksGrid[y][x2]:
+		# 			rowCandidates2 = 0
+		# 			for y2 in range(gridSize):
+		# 				if i in marksGrid[y2][x2]:
+		# 					rowCandidates2 += 1
+		# 			if rowCandidates2 == 2:
+		# 				row = x2
+		# 				break
 			#print(f"Row {row}: {rowCandidates2}")
 			# for y2 in range(gridSize):
 			# 	if i in marksGrid[y2][row]:
@@ -920,8 +937,21 @@ def skyscraper(x, y):
 			for y2 in range(gridSize):
 				if i in marksGrid[y2][x] and y2 != y:
 					corner2 = (x, y2)
-		
-
+			if corner2:
+				for x2 in range(gridSize):
+					if i in marksGrid[corner2[1]][x2]:
+						candidates = 0
+						for y2 in range(gridSize):
+							if i in marksGrid[y2][x2]:
+								candidates += 1
+								if y2 != corner2[1]:
+									corner3 = (x2, y2)
+						if candidates == 2:
+							for y3 in range(gridSize):
+								if y3 != y2 and y3 != y:
+									corner4 = (x2, y3)
+		print(f"{i} | {corner1} {corner2} {corner3} {corner4}")
+		continue
 
 		#breakJloop = False
 		# for j in range(gridSize):
@@ -989,6 +1019,84 @@ def skyscraper(x, y):
 
 		if rowCandidates == 2:
 			pass
+
+def skyscraper(x, y):
+	def traverseRow(x, y, i):
+		cornerCache = []
+		#candidates = 0
+		for j in range(gridSize):
+			if i in marksGrid[y][j]:
+				#candidates += 1
+				if j != x:
+					cornerCache.append((j, y))
+		if len(cornerCache) == 1:
+			corners.append(cornerCache)
+			traverseCol(corners[1][1], y, i)
+	
+	def traverseCol(x, y, i):
+		cornerCache = []
+		#candidates = 0
+		for j in range(gridSize):
+			if i in marksGrid[j][x]:
+				#candidates += 1
+				if j != y:
+					cornerCache.append((x, j))
+		if len(cornerCache) == 1:
+			corners.append(cornerCache)
+			traverseRow(x, corners[1][1], i)
+	
+	for i in marksGrid[y][x]:
+			rowCandidates = 0 # H pattern
+			colCandidates = 0 # I pattern
+			corners = [(x, y), None, None, None]
+			#corners1 = [(x, y), None, None, None]
+			#corners2 = [(x, y), None, None, None]
+			# corner1 = (x, y)
+			# corner2 = None
+			# corner3 = None
+			# corner4 = None
+	
+			#Check first row/col of H or I
+			# for j in range(gridSize):
+			# 	if i in marksGrid[j][x]:
+			# 		rowCandidates += 1
+			# 		if j != y:
+			# 			corners.append((x, j))
+			# 	if i in marksGrid[y][j]:
+			# 		colCandidates += 1
+			# 		if j != x:
+			# 			corners.append((j, y))
+			
+			# if not(
+			# rowCandidates == 2 and colCandidates == 1 or
+			# rowCandidates == 1 and colCandidates == 2 or
+			# rowCandidates == 2 and colCandidates == 2):
+			# 	continue
+
+			#Traverse column of initial point
+			for j in range(gridSize):
+				if i in marksGrid[j][x]:
+					rowCandidates += 1
+					if j != y:
+						corners.append((x, j))
+			if rowCandidates == 2:
+				rowCandidates2 = 0
+				y2 = corners[1][1]
+
+			# 	for j in range(gridSize):
+			# 		if i in marksGrid[y2][j]:
+			# 			rowCandidates2 += 1
+			# 			if j != x:
+			# 				corners.append((j, y2))
+			# 	if rowCandidates2 == 2:
+			# 		rowCandidates3 = 0
+			# 		x2 = corners[2][0]
+
+			# 		for j in range(gridSize):
+			# 			if i in marksGrid[j][x2]:
+			# 				rowCandidates2 += 1
+			# 				if j != y2:
+			# 					corners.append((x2, j))
 
 #If row and col both have two of a number, remove number from intersection
 def twoStringKite(x, y):
@@ -1083,36 +1191,37 @@ validateGrid()
 print("Starting grid:")
 printGrid(False)
 startTime = time.perf_counter()
-for x in range(gridSize):
-	for y in range(gridSize):
-		if grid[y][x] == "_":
+if not isPractice:
+	for x in range(gridSize):
+		for y in range(gridSize):
+			if grid[y][x] == "_":
 
-			#Mark current row
-			currGroup = set()
-			for x2 in range(gridSize):
-				inspectedSpace = grid[y][x2]
-				if inspectedSpace != "_":
-					currGroup.add(inspectedSpace)
-			marksGrid[y][x] = charSet - currGroup
-
-			#Mark current column
-			currGroup = set()
-			for y2 in range(gridSize):
-				inspectedSpace = grid[y2][x]
-				if inspectedSpace != "_":
-					currGroup.add(inspectedSpace)
-			marksGrid[y][x] -= currGroup
-
-			#Mark current box
-			box = Box(x, y)
-			currGroup = set()
-			for x2 in range(box.leftBound, box.rightBound):
-				for y2 in range(box.lowerBound, box.upperBound):
-					inspectedSpace = grid[y2][x2]
+				#Mark current row
+				currGroup = set()
+				for x2 in range(gridSize):
+					inspectedSpace = grid[y][x2]
 					if inspectedSpace != "_":
 						currGroup.add(inspectedSpace)
-			marksGrid[y][x] -= currGroup
-			del box
+				marksGrid[y][x] = charSet - currGroup
+
+				#Mark current column
+				currGroup = set()
+				for y2 in range(gridSize):
+					inspectedSpace = grid[y2][x]
+					if inspectedSpace != "_":
+						currGroup.add(inspectedSpace)
+				marksGrid[y][x] -= currGroup
+
+				#Mark current box
+				box = Box(x, y)
+				currGroup = set()
+				for x2 in range(box.leftBound, box.rightBound):
+					for y2 in range(box.lowerBound, box.upperBound):
+						inspectedSpace = grid[y2][x2]
+						if inspectedSpace != "_":
+							currGroup.add(inspectedSpace)
+				marksGrid[y][x] -= currGroup
+				del box
 loopCt = 0
 complete = False
 while not complete:
@@ -1125,7 +1234,8 @@ while not complete:
 		for y in range(gridSize):
 			if grid[y][x] == "_":
 
-				placeNumbers(x, y)
+				if not isPractice:
+					placeNumbers(x, y)
 
 				if grid[y][x] in charSet:
 					continue
@@ -1138,7 +1248,7 @@ while not complete:
 				if len(marksGrid[y][x]) == 2:
 					yWing(x, y)
 					wWing(x, y)
-				skyscraper(x, y)
+				#skyscraper(x, y)
 				twoStringKite(x, y)
 
 				if marksGrid[y][x] == set():
