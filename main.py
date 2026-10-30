@@ -366,24 +366,29 @@ def placeNumbers(x, y):
 
 #HELPER FUNCTIONS
 def removeMarkSeenByTwoSpaces(space1, space2, markToRemove):
-	#Row and column
-	marksGrid[space1[1]][space2[0]].discard(markToRemove)
-
-	#Row and box
-	targetBox = Box(space1[0], space1[1])
-	if targetBox.lowerBound <= space2[1] < targetBox.upperBound:
-		for x2 in range(targetBox.leftBound, targetBox.rightBound):
-			marksGrid[space2[1]][x2].discard(markToRemove)
-			#print(f"{space1} {space2} | row/box | Removed {markToRemove} from {x2, space2[1]}")
+	def rowAndBox(space1, space2, markToRemove):
+		targetBox = Box(space1[0], space1[1])
+		if targetBox.lowerBound <= space2[1] < targetBox.upperBound:
+			for x2 in range(targetBox.leftBound, targetBox.rightBound):
+				if space2[0] != x2:
+					marksGrid[space2[1]][x2].discard(markToRemove)
+					#print(f"{space1} {space2} | row/box | Removed {markToRemove} from {x2, space2[1]}")
 		del targetBox
 
-	#Column and box
-	targetBox = Box(space1[0], space1[1])
-	if targetBox.leftBound <= space2[0] < targetBox.rightBound:
-		for y2 in range(targetBox.lowerBound, targetBox.upperBound):
-			marksGrid[y2][space2[0]].discard(markToRemove)
-			#print(f"{space1} {space2} | col/box | Removed {markToRemove} from {space2[0], y2}")
-	del targetBox
+	def colAndBox(space1, space2, markToRemove):
+		targetBox = Box(space1[0], space1[1])
+		if targetBox.leftBound <= space2[0] < targetBox.rightBound:
+			for y2 in range(targetBox.lowerBound, targetBox.upperBound):
+				if space2[1] != y2:
+					marksGrid[y2][space2[0]].discard(markToRemove)
+					#print(f"{space1} {space2} | col/box | Removed {markToRemove} from {space2[0], y2}")
+		del targetBox
+	
+	marksGrid[space1[1]][space2[0]].discard(markToRemove)
+	rowAndBox(space1, space2, markToRemove)
+	rowAndBox(space2, space1, markToRemove)
+	colAndBox(space1, space2, markToRemove)
+	colAndBox(space2, space1, markToRemove)
 
 def checkIfTwoSpacesSeeEachOther(space1, space2):
 	if (space1[0] == space2[0] or space1[1] == space2[1] or
@@ -874,13 +879,11 @@ def wWing(x, y):
 		prevWs.append((marks[1], colPointsList2[0], colPointsList2[3]))
 
 #If a mark appears in exactly 4 corners across two rows/cols, but one side is slanted, clear mark from spaces that see both slant corners
-def skyscraperOLD(x, y):
+prevSkyscrapers = []
+def skyscraper(x, y):
 	for i in marksGrid[y][x]:
-		#colIndex = None
 		rowCandidates = 0 # H pattern
 		colCandidates = 0 # I pattern
-		#rowCandidates2 = 0
-		colcandidates2 = []
 		corner1 = (x, y)
 		corner2 = None
 		corner3 = None
@@ -889,214 +892,83 @@ def skyscraperOLD(x, y):
 		#Check first row/col of H or I
 		for j in range(gridSize):
 			if i in marksGrid[j][x]:
-				rowCandidates += 1
-			if i in marksGrid[y][j]:
 				colCandidates += 1
-		
+			if i in marksGrid[y][j]:
+				rowCandidates += 1
+
 		if rowCandidates != 2 and colCandidates != 2 or rowCandidates == colCandidates:
 			continue
 		
-		#Go along middle path of H or I
-		# if rowCandidates == 2:
-		# 	row = None
-		# 	for x2 in range(gridSize):
-		# 		if i in marksGrid[y][x2]:
-		# 			rowCandidates2 = 0
-		# 			for y2 in range(gridSize):
-		# 				if i in marksGrid[y2][x2]:
-		# 					rowCandidates2 += 1
-		# 			if rowCandidates2 == 2:
-		# 				row = x2
-		# 				break
-			#print(f"Row {row}: {rowCandidates2}")
-			# for y2 in range(gridSize):
-			# 	if i in marksGrid[y2][row]:
-			# 		print(f"{x, y}, {row, y}, {row, y2}, {x, y2}")
+		fourCorners = False
 
+		if rowCandidates == 2:
+			for x2 in range(gridSize):
+				if i in marksGrid[y][x2] and x2 != x:
+					corner2 = (x2, y)
+			if not corner2:
+				continue
+			for y2 in range(gridSize):
+				if fourCorners:
+					break
+				if y2 == y:
+					continue
+				if i in marksGrid[y2][corner2[0]]:
+					candidates = 0
+					for x2 in range(gridSize):
+						if i in marksGrid[y2][x2]:
+							candidates += 1
+							if x2 == corner2[0]:
+								corner3 = (x2, y2)
+					if candidates == 2:
+						for x3 in range(gridSize):
+							if i in marksGrid[y2][x3] and x3 != corner3[0] and x3 != x:
+								corner4 = (x3, y2)
+								fourCorners = True
 
-		# if rowCandidates == 2:
-		# 	for x2 in range(gridSize):
-		# 		if i in marksGrid[y][x2]:
-		# 			rowCandidatesList = []
-		# 			for y2 in range(gridSize):
-		# 				if i in marksGrid[y2][x2]:
-		# 					if x == x2 and y != y2: corner2 = (x, y2)
-		# 					if x != x2 and y != y2: corner3 = (x2, y2)
-		# 					if x != x2 and y == y2: corner4 = (x2, y)
-		# 					rowCandidatesList.append(y2)
-		# 					if len(rowCandidatesList) > 2:
-		# 						break
-		# 			if len(rowCandidatesList) != 2:
-		# 				continue
-					#print(f"Candidate Y values for x = {x2} for mark {i}: {rowCandidatesList}")
-					#corner3 = (x2, y)
-					#corner4 = (x2, y2)
-			#print(f"{corner1}, {corner2}, {corner3}, {corner4}\n")
-		
 		if colCandidates == 2:
 			for y2 in range(gridSize):
 				if i in marksGrid[y2][x] and y2 != y:
 					corner2 = (x, y2)
-			if corner2:
-				for x2 in range(gridSize):
-					if i in marksGrid[corner2[1]][x2]:
-						candidates = 0
-						for y2 in range(gridSize):
-							if i in marksGrid[y2][x2]:
-								candidates += 1
-								if y2 != corner2[1]:
-									corner3 = (x2, y2)
-						if candidates == 2:
-							for y3 in range(gridSize):
-								if y3 != y2 and y3 != y:
-									corner4 = (x2, y3)
-		print(f"{i} | {corner1} {corner2} {corner3} {corner4}")
-		continue
-
-		#breakJloop = False
-		# for j in range(gridSize):
-		# 	if i in marksGrid[y][j]:
-		# 		colCandidates = 0
-		# 		for y2 in range(gridSize):
-		# 			if i not in marksGrid[y2][j]:
-		# 				continue
-		# 			colCandidates += 1
-		# 			if colCandidates > 2:
-		# 				break
-		# 			if j == x and y2 != y:
-		# 				corner3 = (j, y2)
-		# 			else:
-		# 			#corner2 = (j, y)
-		# 			#corner4 = (x, y2)
-		# 			colcandidates2.append(y2)
-		# 		if len(colcandidates2) != 2:
-		# 	if i in marksGrid[j][x]:
-		# 		rowCandidates = 0
-		# 		for x2 in range(gridSize):
-		# 			if i in marksGrid[j][x2]:
-		# 				rowCandidates += 1
-		# 				if rowCandidates > 2:
-		# 					break
-		# 		if rowCandidates == 2:
-		# 			corner2 = (x, j)
-		# 			corner3 = (x2, j)
-		# 			corner4 = (x2, y)
+			if not corner2:
+				continue
+			for x2 in range(gridSize):
+				if fourCorners:
+					break
+				if x2 == x:
+					continue
+				if i in marksGrid[corner2[1]][x2]:
+					candidates = 0
+					for y2 in range(gridSize):
+						if i in marksGrid[y2][x2]:
+							candidates += 1
+							if y2 == corner2[1]:
+								corner3 = (x2, y2)
+					if candidates == 2:
+						for y3 in range(gridSize):
+							if i in marksGrid[y3][x2] and y3 != corner3[1] and y3 != y:
+								corner4 = (x2, y3)
+								fourCorners = True
 		
-		#print(f"Vague possibility for {i} at {corner1}, {corner2}, {corner3}, {corner4}")
-
-		if(rowCandidates != 2 and colCandidates != 2
-		or not (corner1 and corner2 and corner3 and corner4)
-		or corner1 == corner2
-		or corner1 == corner3
-		or corner1 == corner4
-		or corner2 == corner3
-		or corner2 == corner4
-		or corner3 == corner4
-		or grid[corner2[1]][corner2[0]] != "_"
-		or grid[corner3[1]][corner3[0]] != "_"
-		or grid[corner4[1]][corner4[0]] != "_"):
+		cornerSet = {corner1, corner2, corner3, corner4}
+		if not fourCorners or (cornerSet, i) in prevSkyscrapers:
 			continue
 
-		#print(f"Possibility for {i} at {corner1}, {corner2}, {corner3}, {corner4}")
+		prevSkyscrapers.append((cornerSet, i))
 
-		#Check for roof of skyscraper
-		straightSides = 0
-		if colCandidates == 2:
-			if corner1[1] == corner2[1]: straightSides += 1
-			if corner1[0] == corner4[0]: straightSides += 1
-			if corner2[0] == corner3[0]: straightSides += 1
-			if corner3[1] == corner4[1]: straightSides += 1
-		if rowCandidates == 2:
-			if corner1[0] == corner2[0]: straightSides += 1
-			if corner1[1] == corner4[1]: straightSides += 1
-			if corner2[1] == corner3[1]: straightSides += 1
-			if corner3[0] == corner4[0]: straightSides += 1
-		
-		if straightSides != 3:
-			continue
-		
-		#print(f"Skyscraper for {i} at {corner1}, {corner2}, {corner3}, {corner4}")
-
-		if rowCandidates == 2:
-			pass
-
-def skyscraper(x, y):
-	def traverseRow(x, y, i):
-		cornerCache = []
-		#candidates = 0
-		for j in range(gridSize):
-			if i in marksGrid[y][j]:
-				#candidates += 1
-				if j != x:
-					cornerCache.append((j, y))
-		if len(cornerCache) == 1:
-			corners.append(cornerCache)
-			traverseCol(corners[1][1], y, i)
-	
-	def traverseCol(x, y, i):
-		cornerCache = []
-		#candidates = 0
-		for j in range(gridSize):
-			if i in marksGrid[j][x]:
-				#candidates += 1
-				if j != y:
-					cornerCache.append((x, j))
-		if len(cornerCache) == 1:
-			corners.append(cornerCache)
-			traverseRow(x, corners[1][1], i)
-	
-	for i in marksGrid[y][x]:
-			rowCandidates = 0 # H pattern
-			colCandidates = 0 # I pattern
-			corners = [(x, y), None, None, None]
-			#corners1 = [(x, y), None, None, None]
-			#corners2 = [(x, y), None, None, None]
-			# corner1 = (x, y)
-			# corner2 = None
-			# corner3 = None
-			# corner4 = None
-	
-			#Check first row/col of H or I
-			# for j in range(gridSize):
-			# 	if i in marksGrid[j][x]:
-			# 		rowCandidates += 1
-			# 		if j != y:
-			# 			corners.append((x, j))
-			# 	if i in marksGrid[y][j]:
-			# 		colCandidates += 1
-			# 		if j != x:
-			# 			corners.append((j, y))
-			
-			# if not(
-			# rowCandidates == 2 and colCandidates == 1 or
-			# rowCandidates == 1 and colCandidates == 2 or
-			# rowCandidates == 2 and colCandidates == 2):
-			# 	continue
-
-			#Traverse column of initial point
-			for j in range(gridSize):
-				if i in marksGrid[j][x]:
-					rowCandidates += 1
-					if j != y:
-						corners.append((x, j))
-			if rowCandidates == 2:
-				rowCandidates2 = 0
-				y2 = corners[1][1]
-
-			# 	for j in range(gridSize):
-			# 		if i in marksGrid[y2][j]:
-			# 			rowCandidates2 += 1
-			# 			if j != x:
-			# 				corners.append((j, y2))
-			# 	if rowCandidates2 == 2:
-			# 		rowCandidates3 = 0
-			# 		x2 = corners[2][0]
-
-			# 		for j in range(gridSize):
-			# 			if i in marksGrid[j][x2]:
-			# 				rowCandidates2 += 1
-			# 				if j != y2:
-			# 					corners.append((x2, j))
+		#Make sure each orientation has 3 straight sides before clearing marks
+		if ((colCandidates == 2
+		and corner1[0] == corner2[0]
+		and corner2[1] == corner3[1]
+		and corner3[0] == corner4[0]
+		and (corner1[1] > corner2[1] and corner4[1] > corner2[1])
+		 or (corner1[1] < corner2[1] and corner4[1] < corner2[1]))
+		 or (rowCandidates == 2
+		and corner1[1] == corner2[1]
+		and corner2[0] == corner3[0]
+		and corner3[1] == corner4[1]
+		and (corner1[0] > corner2[0] and corner4[0] > corner2[0])
+		 or (corner1[0] < corner2[0] and corner4[0] < corner2[0]))):
+			removeMarkSeenByTwoSpaces(corner1, corner4, i)
 
 #If row and col both have two of a number, remove number from intersection
 def twoStringKite(x, y):
@@ -1248,7 +1120,7 @@ while not complete:
 				if len(marksGrid[y][x]) == 2:
 					yWing(x, y)
 					wWing(x, y)
-				#skyscraper(x, y)
+				skyscraper(x, y)
 				twoStringKite(x, y)
 
 				if marksGrid[y][x] == set():
